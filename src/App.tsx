@@ -1,3 +1,4 @@
+
 import { useEffect, useState, type FormEvent } from "react";
 import "./App.css";
 import {
@@ -54,7 +55,8 @@ function App() {
         setUser(currentUser);
         setProfile(currentUser.profile ?? emptyProfile);
       } catch {
-        // Если пользователь не авторизован, показываем главную страницу.
+        setUser(null);
+        setProfile(emptyProfile);
       } finally {
         setLoading(false);
       }
@@ -70,18 +72,21 @@ function App() {
     setBusy(true);
 
     try {
-      if (mode === "register") {
-        await api.register(username, password);
-        setMessage("Регистрация выполнена. Теперь войдите в аккаунт.");
-        setMode("login");
-        setPassword("");
-      } else {
-        await api.login(username, password);
-        const currentUser = await api.getProfile();
-        setUser(currentUser);
-        setProfile(currentUser.profile ?? emptyProfile);
-        setMessage("Вы успешно вошли в аккаунт.");
-      }
+      const result =
+        mode === "register"
+          ? await api.register(username, password)
+          : await api.login(username, password);
+
+      setUser(result.user);
+      setProfile(result.user.profile ?? emptyProfile);
+      setPassword("");
+      setEditing(false);
+
+      setMessage(
+        mode === "register"
+          ? "Регистрация успешно выполнена!"
+          : "Вы успешно вошли в аккаунт.",
+      );
     } catch (err) {
       setError(
         err instanceof Error
@@ -100,8 +105,8 @@ function App() {
 
     try {
       await api.logout();
-    } catch {
-      // Даже если сервер вернул ошибку, возвращаемся к форме входа.
+    } catch (err) {
+      console.error("Ошибка выхода:", err);
     } finally {
       setUser(null);
       setProfile(emptyProfile);
@@ -223,6 +228,7 @@ function App() {
                 <span className="mini-label">НАШ ЗВУК</span>
                 <p>Alternative · Indie · Rock</p>
               </div>
+
               <div className="sound-wave" aria-label="Музыкальная волна">
                 {Array.from({ length: 28 }, (_, index) => (
                   <span
@@ -236,7 +242,10 @@ function App() {
             </div>
           </div>
 
-          <div className="hero-art" aria-label="Абстрактная музыкальная композиция">
+          <div
+            className="hero-art"
+            aria-label="Абстрактная музыкальная композиция"
+          >
             <div className="art-orbit orbit-one" />
             <div className="art-orbit orbit-two" />
             <div className="art-orbit orbit-three" />
@@ -494,6 +503,7 @@ function App() {
               <>
                 <div className="auth-tabs">
                   <button
+                    type="button"
                     className={mode === "login" ? "auth-tab active" : "auth-tab"}
                     onClick={() => {
                       setMode("login");
@@ -504,6 +514,7 @@ function App() {
                     Вход
                   </button>
                   <button
+                    type="button"
                     className={
                       mode === "register" ? "auth-tab active" : "auth-tab"
                     }
